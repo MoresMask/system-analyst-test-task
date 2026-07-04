@@ -7,14 +7,16 @@ actor "Пользователь" as User
 
 component "Мобильное приложение" as Mobile
 component "API Gateway / BFF" as BFF
+
 component "User Service" as UserService
 component "Cart Service" as CartService
 component "Order Service" as OrderService
 component "Marketing Service" as MarketingService
-queue "Message Broker\n(Kafka / RabbitMQ)" as Broker
+
 component "Notification Service" as NotificationService
 database "Notification DB" as NotificationDB
 database "Templates" as Templates
+
 cloud "FCM / APNs" as PushProvider
 
 User --> Mobile
@@ -22,19 +24,18 @@ User --> Mobile
 Mobile --> BFF: регистрация device token
 BFF --> UserService: сохранить device token
 
-CartService --> Broker: cart_abandoned
-OrderService --> Broker: order_cancelled / order_status_changed
-MarketingService --> Broker: promo_campaign_started
+CartService --> NotificationService: создать уведомление\ncart_abandoned
+OrderService --> NotificationService: создать уведомление\norder_cancelled / order_status_changed
+MarketingService --> NotificationService: создать уведомление\npromo_campaign
 
-Broker --> NotificationService: событие для отправки push
-
-NotificationService --> UserService: получить пользователя и device token
+NotificationService --> UserService: получить пользователя\nи device token
 NotificationService --> Templates: получить шаблон уведомления
-NotificationService --> NotificationDB: сохранить уведомление со статусом pending
+NotificationService --> NotificationDB: сохранить уведомление\nstatus = pending
+
 NotificationService --> PushProvider: отправить push
 PushProvider --> Mobile: доставить push
 Mobile --> User: показать уведомление
 
-NotificationService --> NotificationDB: обновить статус отправки
+NotificationService --> NotificationDB: обновить статус отправки\nsuccess / failed / retry_pending
 
 @enduml
