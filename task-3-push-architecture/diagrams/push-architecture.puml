@@ -1,1 +1,40 @@
 
+@startuml
+title Верхнеуровневая архитектура PUSH-уведомлений
+
+skinparam componentStyle rectangle
+
+actor "Пользователь" as User
+
+component "Мобильное приложение" as Mobile
+component "API Gateway / BFF" as BFF
+component "User Service" as UserService
+component "Cart Service" as CartService
+component "Order Service" as OrderService
+component "Marketing Service" as MarketingService
+queue "Message Broker\n(Kafka / RabbitMQ)" as Broker
+component "Notification Service" as NotificationService
+database "Notification DB" as NotificationDB
+component "Template Service" as TemplateService
+component "FCM / APNs" as PushProvider
+
+User --> Mobile
+Mobile --> BFF: регистрация device token
+BFF --> UserService: сохранить device token
+
+CartService --> Broker: cart_abandoned
+OrderService --> Broker: order_cancelled / order_status_changed
+MarketingService --> Broker: promo_campaign_started
+
+Broker --> NotificationService: событие для отправки push
+
+NotificationService --> UserService: получить пользователя и device token
+NotificationService --> TemplateService: получить шаблон уведомления
+NotificationService --> NotificationDB: сохранить уведомление и статус отправки
+NotificationService --> PushProvider: отправить push
+PushProvider --> Mobile: доставить push
+Mobile --> User: показать уведомление
+
+NotificationService --> NotificationDB: обновить статус доставки
+
+@enduml
