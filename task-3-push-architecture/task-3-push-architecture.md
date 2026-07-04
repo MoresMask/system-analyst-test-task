@@ -54,45 +54,18 @@
 
 ## 4. Верхнеуровневая схема
 
-```plantuml
-@startuml
-title Верхнеуровневая архитектура PUSH-уведомлений
+PNG формат 
 
-skinparam componentStyle rectangle
+[Верхнеуровневая архитектура PUSH-уведомлений](//www.plantuml.com/plantuml/png/fLHFQzim7BthKuZUo-w3ZVuftNPe5-XwAmJLLbCJMpAot95Rqz1jXq9Wvy6-GjBDIzOkoLUGlj6UvSJOgJC6lSJIp-_zdln-Jzb9D5CwZKAY0nroQhwQp5xRMpF3Ss2lpTpSvslyZkoGuYT_ERKtA3tO6mSPqTRfoTjjEm0eCpz1-MCUJGRQrFmc9Ea68cQAHTIJKIm55_f4zw2bkAUPw8IS4EPfgUYM-Gxoexqp4wSxSZBORr6MqDE4AqBA7a1_0sfifeunmpgZPe7pe83Dh-K9CaS-akT1oAlitTOx-ePf_f7rw0kwTtZeS7ZMD79HUiBLLU3nyXJBVHMt3nThkBpGW7kl_BM6g3HsF6AgotKWEZLqMLqngfHZgOEBm6CwaAB6ghvO4NscsJbB-1hjOEy9us2l0lx0epY4ROc3bJkS8vIfJxSEzuzWvsxhk02qqkIofUHLuEV3SsvkRxzUZOCKJrU2yoyfffUP7yXN7zb2ikmdh8VKv_cHgPPTBWY0Zb2P18XzCxUtEIKVEiXtTHAfpCEnroqfkvW98Zno7HeJdPq93xtQy4FuCDudrGa-kxVCcxKz9ZmUXjo7bqKbqKodITkxn8s1vdeEdgqRAnb9w4On2phmgw7NKzVDmjtNWVrSU8v2umKUdWaphGraO_yoKGtTxHUCT-nkzwpnG-nmOzzwe1i3iycQmdhwYiPS-B1yipdLjEFyStp-madSBoLY04WLLRaD840wJ_uweNXVshzqvW6moJ-dIlxR3V36uCnBtU8OxW--N_iGo4vXIUfvF4cGpWiM535LNAjUkxHe1uiq2ly2)
 
-actor "Пользователь" as User
+Исходник верхнеуровневой схемы в формате PlantUML находится в отдельном файле:
 
-component "Мобильное приложение" as Mobile
-component "API Gateway / BFF" as BFF
+[diagrams/push-architecture.puml](diagrams/push-architecture.puml)
 
-component "User Service" as UserService
-component "Cart Service" as CartService
-component "Order Service" as OrderService
-component "Marketing Service" as MarketingService
+Схема показывает общий подход к отправке PUSH-уведомлений без брокера сообщений. Бизнес-сервисы напрямую вызывают `Notification Service`, передавая событие для отправки уведомления. `Notification Service` получает данные пользователя и device token, выбирает шаблон уведомления, сохраняет запись об отправке и передает PUSH во внешний push-провайдер FCM/APNs. Результат отправки сохраняется в `Notification DB`.
 
-component "Notification Service" as NotificationService
-database "Notification DB" as NotificationDB
-database "Templates" as Templates
+На первом этапе прямой вызов `Notification Service` проще в реализации и достаточен для базовых сценариев: брошенная корзина, отмена заказа, изменение статуса заказа и рекламные PUSH-уведомления. При росте нагрузки или количества источников событий схему можно расширить, добавив брокер сообщений, например Kafka или RabbitMQ, между бизнес-сервисами и `Notification Service`.
 
-cloud "FCM / APNs" as PushProvider
 
-User --> Mobile
 
-Mobile --> BFF: регистрация device token
-BFF --> UserService: сохранить device token
 
-CartService --> NotificationService: создать уведомление\ncart_abandoned
-OrderService --> NotificationService: создать уведомление\norder_cancelled / order_status_changed
-MarketingService --> NotificationService: создать уведомление\npromo_campaign
-
-NotificationService --> UserService: получить пользователя\nи device token
-NotificationService --> Templates: получить шаблон уведомления
-NotificationService --> NotificationDB: сохранить уведомление\nstatus = pending
-
-NotificationService --> PushProvider: отправить push
-PushProvider --> Mobile: доставить push
-Mobile --> User: показать уведомление
-```
-NotificationService --> NotificationDB: обновить статус отправки\nsuccess / failed / retry_pending
-
-@enduml
